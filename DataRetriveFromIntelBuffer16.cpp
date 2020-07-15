@@ -1,5 +1,11 @@
-
-#include<bits/stdc++.h> 
+//Following is the program is developped by A. R. Ansari 
+//It will read intel hex file having no extended linear address that is it has maxlimit of 0xFFFF addressing 64K Bytes..16 bit.
+//example of use  in windows where first argument is filnename, 2nd argument is hex address ,3rd argument is in hex index of page and the last argument is in decimal the number of bytes to be read from the provided index of page...
+//it shoudld be note that  2nd arg+ 3rd arg=>256 bytes otherwise it will rounded up under 256.
+//DataRetriveFromIntelBuffer16.exe 0010603_NVM.HEX 36 51 16
+//36
+//01000A006400E803E803000100000100
+#include <bits/stdc++.h>
 #include <cstring>
 #include <iostream>
 #define DATA_LENGTH 0
@@ -170,45 +176,51 @@ BYTE getNVM_CRC(BYTE *CKBlock, uint32_t Length, BYTE Seed)
     }
     return (crc);
 }
-char addresshigh, addressmid, addresslow;
+BYTE addresshigh, addressmid, addresslow;
 int fromIndex, toIndex;
-struct newPage {
-BYTE binaryData[256];
-bool hasData=false;
+struct newPage
+{
+    BYTE binaryData[256];
+    bool hasData = false;
 };
 #define NO_OF_NPAGES 400
 newPage myNewPages[NO_OF_NPAGES];
 void initDataStructures(newPage arnew[], unsigned int y)
 {
-    for(unsigned int i=0;i<y;i++)
-    {   
-               arnew[i].hasData=false;
-               memset(arnew[i].binaryData,0xff,256);
-                
-                
+    for (unsigned int i = 0; i < y; i++)
+    {
+        arnew[i].hasData = false;
+        memset(arnew[i].binaryData, 0xff, 256);
     }
+}
+char myBytes[2];
+unsigned char hex2byte(const char *hex)
+{
+    unsigned short byte = 0;
+    std::istringstream iss(hex);
+    iss >> std::hex >> byte;
+    return byte % 0x100;
 }
 int main(int argc, char *argv[])
 
 {
-    //      int ret = 0;
-    //    int fd;
-    ///     Spi_address = 256 * atol(argv[1]);
-  //  addresshigh = atoi(argv[2]);
-    //addressmid = atoi(argv[2]);
-    addresslow = atoi(argv[2]);
-    fromIndex = atoi(argv[3]);
+
+    for (int i = 0; i < 2; i++)
+        myBytes[i] = argv[2][i];
+    addresslow = hex2byte(myBytes); //ParseByte(myBytes);
+
+    for (int i = 0; i < 3; i++)
+        myBytes[i] = argv[3][i];
+
+    fromIndex = hex2byte(myBytes); //ParseByte(myBytes);
+
     if (fromIndex >= 256)
         fromIndex = 255;
     toIndex = atoi(argv[4]);
     if (toIndex + fromIndex > 256)
         toIndex = 1;
-initDataStructures(myNewPages,NO_OF_NPAGES);
-    ///printf("\nfi=%d toi=%d",fromIndex,toIndex);
-    //int main(int argc, char **argv)
-    //{
-    //char *end=":00000001FF";
-    //char *pcmp=NULL;
+    initDataStructures(myNewPages, NO_OF_NPAGES);
+
     if (argc != 5)
     {
         printf("\nNACK");
@@ -221,16 +233,6 @@ initDataStructures(myNewPages,NO_OF_NPAGES);
         if (argv[1][i] == '\0')
             break;
     }
-    //address
-
-    //argv[1];
-    ///    requestedELA = atol(argv[2]);
-    /// requestedPageNo = atol(argv[3]);
-    ///int fromIndex = atol(argv[4]) % 256;
-    ///int toIndex = atol(argv[5]) % 256;
-
-    ///printf("\nrequestedELA =%.2X requestedPageNo=%.2X",requestedELA,requestedPageNo);
-    ///
 
     ///
 
@@ -247,18 +249,9 @@ initDataStructures(myNewPages,NO_OF_NPAGES);
     // Line read from file
     std::string line;
 
-    // Store data read from file, line by line
     vector<LineData> fileData;
     vector<pageDetails> vPageDetails;
 
-    // struct pageData
-    // {
-    //     BYTE page[256];
-    //     unsigned int pageNo;
-    //     unsigned int exAddres;
-    // };
-    // vector <pageData> myPageData;
-    // Read file line by line, and process it
     bool endOfFile = false;
     bool dataPresent = true;
     while (getline(inFile, line))
@@ -275,7 +268,6 @@ initDataStructures(myNewPages,NO_OF_NPAGES);
     BYTE checkSum = 0;
     for (int j = 0; j < lineCounter; j++)
     {
-        //        printf("\nlinecounter=%u",lineCounter);
 
         switch (fileData.at(j).Data.at(RECORD_DATA_TYPE_INDEX))
         {
@@ -297,68 +289,19 @@ initDataStructures(myNewPages,NO_OF_NPAGES);
                 printf("\nCheckSum Error @LineNo= %u %.2X ", j, checkSum);
                 exit(0);
             }
-        
-            //tpageDetails.pageNo=pageNo;
-             //   tpageDetails.pageNo);
-    
-            ///if((extendedLA==requestedELA)&&(pageNo==requestedPageNo))
-
-            ///printf("\nretreived Pageno =%.2X Retrived pageindex=%.2X,eLA=%u",pageNo,pageIndex,extendedLA);
 
             for (int i = 0; i < fileData.at(j).Data.at(DATA_LENGTH); i++)
             {
                 /// printf("%.2X",fileData.at(j).Data.at(4+i));
-                 if((i+pageIndex)<256)
-               { myNewPages[pageNo].binaryData[i+pageIndex]=fileData.at(j).Data.at(4 + i);
-           
-               }
+                if ((i + pageIndex) < 256)
+                {
+                    myNewPages[pageNo].binaryData[i + pageIndex] = fileData.at(j).Data.at(4 + i);
+                }
                 else
                 {
-                    myNewPages[pageNo+1].binaryData[i+pageIndex]=fileData.at(j).Data.at(4 + i);
-                
+                    myNewPages[pageNo + 1].binaryData[i + pageIndex] = fileData.at(j).Data.at(4 + i);
                 }
-                
-               
-                // tempPageData[pageIndex + i] = fileData.at(j).Data.at(4 + i);
-                // if (tempPageData[pageIndex + i] < 0xff)
-                //     dataPresent = true;
-              
-                
-
-                // if (pageNo == 4)
-                // {
-                //     printf("\nPageNo=%u,%u", pageNo, pageRepeater);
-                //     pageRepeater++;
-                // }
-
-              //  if ((pageIndex + i) == 255)
-              //  {
-
-                    //     vExtendedLinearDetails.at(extLACounter-1).vPageDetails.push_back(pDetails);
-
-                //     if (dataPresent == true)
-                //     {
-                //            // myNewPages[pageNo].data
-                //         struct pageDetails pDetails;
-                //         pDetails.pageNo = pageNo;
-                //         pDetails.extendedLinearAdderess = extendedLA;
-                //         for (int pg = 0; pg < 256; pg++)
-                //         {
-
-                //             pDetails.pageData[pg] = tempPageData[pg];
-                //             //  vExtendedLinearDetails.at(extLACounter-1).vPageDetails.at(pageCounter).pageData[pg]=tempPageData[pg];
-                //         }
-                //         //vPageDetails.insert(pageNo,pDetails);
-                //         vPageDetails.push_back(pDetails);
-                //         //structExAddDet.vVPageDetails.at(pageCounter).vPageDetails.push_back(pDetails);
-
-                //         pageCounter++;
-                //     }
-                //     dataPresent = false;
-                //     //break;
-                // }
             }
-            //  temp++;
         }
 
         break;
@@ -400,122 +343,29 @@ initDataStructures(myNewPages,NO_OF_NPAGES);
     ////system("cls");
     fileData.clear();
     fileData.shrink_to_fit();
-        for(unsigned int i=0;i<NO_OF_NPAGES;i++)
-    {   //if(i==4)
-            ///    if(myNewPages[i].hasData==true)
+    for (unsigned int i = 0; i < NO_OF_NPAGES; i++)
+    { //if(i==4)
+        ///    if(myNewPages[i].hasData==true)
+        {
+
+            myNewPages[i].hasData = false;
+            for (int c = 0; c < 256; c++)
+            {
+                if (myNewPages[i].binaryData[c] < 0xff)
                 {
-                
-                   myNewPages[i].hasData=false;
-                    for(int c=0;c<256;c++)
-                    {
-                        if(myNewPages[i].binaryData[c]<0xff)
-                      { myNewPages[i].hasData=true;
-                      break;
-                      }
-                    }
+                    myNewPages[i].hasData = true;
+                    break;
                 }
+            }
+        }
     }
-   // for(unsigned int i=0;i<addresslow;i++)
-  //  {   //if(i==4)
-           // if(i==addresslow)
-      
-                
-                
-                 printf("%.2X\n",addresslow);
-                    for(int c=fromIndex;c<(toIndex + fromIndex);c++)
-                    {
-                        if(c%16==0)
-                        printf("\n");
-                    printf("%.2X",myNewPages[addresslow].binaryData[c]);
-                    }
-                
-   // }
-    BYTE yed = 80;
-    //////////CRC//
-    //////////
-    /*
-for(unsigned int i=0;i<vPageDetails.size();i++)
- {
-//if(addresshigh==vPageDetails.at(i).extendedLinearAdderess)
-{
-//	if(addressmid==vPageDetails.at(i).pageNo)
-{
-printf("(HEX DUMP)=>%.2X %.2X %.2X %.3X\n",vPageDetails.at(i).extendedLinearAdderess,vPageDetails.at(i).pageNo,fromIndex,toIndex);
-   for(int k=fromIndex;k<(fromIndex+toIndex);k++)
-	{
-	if(k%16==0)
-	printf("\n");
-	printf("%.2X",vPageDetails.at(i).pageData[k]);
-	} 
 
-///   yed = getNVM_CRC(vPageDetails.at(i).pageData, 256, yed);  
-}
-} 
-}
-*/
+    printf("%.2X\n", addresslow);
+    for (int c = fromIndex; c < (toIndex + fromIndex); c++)
+    {
 
-    ///////
-
-    /*
-
-//printf("\nRequested extAdres=%d mid=%d fi=%d toi=%d",addresshigh,addressmid,fromIndex,toIndex);
-for(unsigned int i=0;i<vPageDetails.size();i++)
- {
-if(addresshigh==vPageDetails.at(i).extendedLinearAdderess)
-{
-	if(addressmid==vPageDetails.at(i).pageNo)
-{
-printf("(HEX DUMP)=>%.2X %.2X %.2X %.3X\n",vPageDetails.at(i).extendedLinearAdderess,vPageDetails.at(i).pageNo,fromIndex,toIndex);
-   for(int k=fromIndex;k<(fromIndex+toIndex);k++)
-	{
-	if(k%16==0)
-	printf("\n");
-	printf("%.2X",vPageDetails.at(i).pageData[k]);
-	} 
-
-///   yed = getNVM_CRC(vPageDetails.at(i).pageData, 256, yed);  
-}
-} 
-
-}
-*/
-
-    //printf("\n\nCRC41 of Data=0x%.2X i=%d linceCounter=%u exc=%u pgc=%u\n",yed,vPageDetails.size(),lineCounter,lc,pageCounter);
-    ///
-    // printf("\nfileData Size=%u",fileData.size());
-    // vPageDetails.shrink_to_fit();
-    //  printf("\nExtLA=%u PC=%u,vPageDetails=%u", lc, pageCounter,vPageDetails.size());
-
-    printf("\n");
-
-    //  for(unsigned int i=0;i<vPageDetails.size();i++)
-    //  {
-    //      if((requestedELA==vPageDetails.at(i).extendedLinearAdderess)&& (vPageDetails.at(i).pageNo==requestedPageNo)){
-    //    printf("\n")  ;
-    // printf("%.2X%.2X",vPageDetails.at(i).extendedLinearAdderess,vPageDetails.at(i).pageNo);
-    // for(int k=fromIndex;k<toIndex;k++)
-    // {
-    //     if(k%16==0)
-    // printf("\n");
-    //      printf("%.2X",vPageDetails.at(i).pageData[k]);
-
-    // }
-
-    // }
-
-    //  }
-    // for(int i=fromIndex;i<=toIndex;i++){
-    // if(i%16==0)
-    // printf("\n");
-    // printf("%.2X",tempPageData[i]);
-    // }
-    //     for(int k=0;k<1;k++){
-    // for(int j=0 ;j<1;j++)
-    //     for(int pg=0;pg<256;pg++){
-    //      printf("%.2X",vExtendedLinearDetails.at(k).vPageDetails.at(j).pageData[pg]);
-    //      if(pg%16==0)
-    //      printf("\n");
-    //                         }
-
-    //     }
+        printf("%.2X", myNewPages[addresslow].binaryData[c]);
+        if (c % 16 == 0)
+            printf("\n");
+    }
 }
